@@ -27,7 +27,12 @@ class FirebaseFirestore:
             for uid in data["Completed"]:
                 user_info =  self.get_user(uid)        
                 if(user_info == None):
-                    user_list.append("Deleted User")
+                    user_list.append({
+                        "username": "Deleted User",
+                        "chineseName": "Deleted User",
+                        "studentNumber": "Deleted User",
+                        "email": "Deleted User",
+                    })
                     print("user doesn't exist")
                     continue
                 else:
