@@ -4,8 +4,10 @@ from firebase_admin import credentials, firestore
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 import datetime
 
 class FirebaseFirestore:
@@ -25,6 +27,7 @@ class FirebaseFirestore:
             for uid in data["Completed"]:
                 user_info =  self.get_user(uid)        
                 if(user_info == None):
+                    user_list.append("Deleted User")
                     print("user doesn't exist")
                     continue
                 else:
@@ -41,10 +44,12 @@ class FirebaseFirestore:
         if (doc.exists):
             return doc.to_dict()
         else:
-            print("No such document2")
+            print("No such document")
 
     def create_pdf(self, volunteerInfo, user_list, docId):
         c = canvas.Canvas(f"{docId}_report.pdf", pagesize=A4)
+        pdfmetrics.registerFont(TTFont('NotoSan', 'NotoSansSC-VariableFont_wght.ttf')) 
+        
         width, height = A4
         styles = getSampleStyleSheet()
 
@@ -55,14 +60,14 @@ class FirebaseFirestore:
 
         # Set the title of the PDF document
         c.setTitle("Simple PDF Document")
-
+        pStyle = ParagraphStyle(name="Address", fontName='NotoSan');
         # Add some text to the PDF
         c.drawString(100, height - 100, "Hello, this is a simple PDF document created with Python!")
         current = datetime.datetime.now()
         student_list = [
             [
                 user["username"],
-                user["chineseName"],
+                Paragraph(user["chineseName"], pStyle),
                 user["studentNumber"],
                 user["email"],
                 str(current)[:10],
@@ -91,14 +96,14 @@ class FirebaseFirestore:
         # Move the origin up for the first table
         table1.wrapOn(c, width, height)
         table1.drawOn(c, 30, height - 200)
-
+        
         # Define data for the second table
         data2 = [
             ["Date", "Activity", "Kind", "Count", "Cs hours",],
             [
                 str(volunteerInfo["Time"])[:10],
-                Paragraph(volunteerInfo["EventName"], styles['Normal']),
-                Paragraph(str(volunteerInfo["Kind"]), styles['Normal']),
+                Paragraph(volunteerInfo["EventName"], pStyle),
+                Paragraph(str(volunteerInfo["Kind"]), pStyle),
                 str(volunteerInfo["Count"]),
                 str(volunteerInfo["CsHours"]),
             ],
@@ -111,15 +116,14 @@ class FirebaseFirestore:
 
         # Move the origin up for the second table
         table2.wrapOn(c, width, height)
-        table2.drawOn(c, 30, height - 350)
-
+        table2.drawOn(c, 30, height - 350 - len(user_list) * 50)
 
         data3 = [
             ["Details", "Location", "Event officer", "Event officer's email", "Spots"],
             [
-                Paragraph(volunteerInfo["Details"], styles['Normal']),
-                Paragraph(volunteerInfo["Location"], styles['Normal']),
-                volunteerInfo["EventOfficer"],
+                Paragraph(volunteerInfo["Details"], pStyle),
+                Paragraph(volunteerInfo["Location"], pStyle),
+                Paragraph(volunteerInfo["EventOfficer"], pStyle),
                 volunteerInfo["Email"],
                 str(volunteerInfo["Spots"]),
             ]
